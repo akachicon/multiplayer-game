@@ -144,7 +144,8 @@ function handleError(err) {
 }
 
 function startEchoMouseMove() {
-  document.body.style.height = screen.height;
+  document.body.style.height = innerHeight;
+  document.body.style.width = innerWidth;
 
   document.onmousemove = handleMouseMove;
 
