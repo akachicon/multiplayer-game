@@ -63,6 +63,7 @@ function createDataChannels() {
     dot.style.top = response[1] + "px";
 
     if (response.length === 3) {
+      console.log(window.timeStamp - performance.now());
       dot.style.background = '#ee0000';
       dot.style.width = 20 + 'px';
       dot.style.height = 20 + 'px';
@@ -184,7 +185,8 @@ function startEchoMouseMove() {
   }
 
   function handleClick(event) {
-    let data = new Uint16Array([event.pageX, event.pageY, 1])
+    let data = new Uint16Array([event.pageX, event.pageY, 1]);
+    window.timeStamp = performance.now();
 
     dc.send(data.buffer);
   }
