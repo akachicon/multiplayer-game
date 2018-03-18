@@ -64,6 +64,9 @@ function createDataChannels() {
 
     if (response.length === 3) {
       dot.style.background = '#ee0000';
+      dot.style.width = 20 + 'px';
+      dot.style.height = 20 + 'px';
+      dot.style.zIndex = 1000;
     }
 
     document.body.appendChild(dot);
