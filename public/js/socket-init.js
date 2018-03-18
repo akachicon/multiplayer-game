@@ -61,6 +61,11 @@ function createDataChannels() {
     dot.className = "dot";
     dot.style.left = response[0] + "px";
     dot.style.top = response[1] + "px";
+
+    if (response.length === 3) {
+      dot.style.background = '#ee0000';
+    }
+
     document.body.appendChild(dot);
   };
 
@@ -149,6 +154,8 @@ function startEchoMouseMove() {
 
   document.onmousemove = handleMouseMove;
 
+  document.onclick = handleClick;
+
   function handleMouseMove(event) {
     let dot, eventDoc, doc, body, pageX, pageY;
 
@@ -169,6 +176,12 @@ function startEchoMouseMove() {
     }
 
     let data = new Uint16Array([event.pageX, event.pageY]);
+
+    dc.send(data.buffer);
+  }
+
+  function handleClick(event) {
+    let data = new Uint16Array([event.pageX, event.pageY, 1])
 
     dc.send(data.buffer);
   }
