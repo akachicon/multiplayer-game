@@ -10,7 +10,7 @@ module.exports = function (cluster) {
     res.render('index.html');
   });
 
-  http.listen(3000);
+  http.listen(process.env.PORT || 3000);
 
   io.on('connection', function (socket) {
     socket.on('message', function (data) {
