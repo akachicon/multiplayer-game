@@ -24,7 +24,7 @@ function dataHandler(data, sender) {
         break;
 
       case 0:
-        sender.dc.send(data);
+        sender.dc.send(new Int16Array([0]).buffer);
         if (sgd.status === 'spectator') {       // cause it can arrive more than once
           return;
         }

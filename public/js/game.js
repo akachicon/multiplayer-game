@@ -72,7 +72,7 @@ game.emit = function (event) {        // use this only after webrtc data-channel
 
 game.ondata = function (data) {
   if (data.byteLength === 14
-      || data.byteLength === 1) {        // status-request response
+      || data.byteLength === 2) {        // status-request response
 
     let [response, id, pxint, pxfrac, pyint, pyfrac, rotation] = new Int16Array(data);
     game.position = { x: pxint + pxfrac / 10000, y: pyint + pyfrac / 10000};
