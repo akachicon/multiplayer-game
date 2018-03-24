@@ -34,26 +34,28 @@ module.exports = function (startPosition, startRotation, input) {
     if (inputAngle >= rotationAngle) {
       if (inputAngle - rotationAngle >= Math.PI) {
         rotationDirection = -1;
+        rotationSpeed = rotationAngle + 2 * Math.PI - inputAngle;
       } else {
         rotationDirection = 1;
+        rotationSpeed = inputAngle - rotationAngle;
       }
     } else {
       if (rotationAngle - inputAngle >= Math.PI) {
         rotationDirection = 1;
+        rotationSpeed = inputAngle + 2 * Math.PI - rotationAngle;
       } else {
         rotationDirection = -1;
+        rotationSpeed = rotationAngle - inputAngle;
       }
     }
 
-    rotationSpeed = Math.abs(rotationAngle - inputAngle);
-    if (rotationSpeed > Math.PI) {
-      rotationSpeed = 2 * Math.PI - rotationSpeed;
+    rotationSpeed /= 2;
+    if (rotationSpeed > MAX_ROTATION_SPEED) {
+      rotationSpeed = MAX_ROTATION_SPEED;
     }
 
-    if (rotationSpeed <= 0.1)  {
+    if (rotationSpeed <= MIN_ROTATION_SPEED)  {
       rotationSpeed = MIN_ROTATION_SPEED;
-    } else {
-      rotationSpeed = MAX_ROTATION_SPEED;
     }
 
     rotationSpeed = rotationDirection * rotationSpeed;

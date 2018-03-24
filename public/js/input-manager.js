@@ -53,11 +53,6 @@ class InputManager {
 
     let length = this.stack.length;
 
-    if (!this.stack.length) {
-      let coords = this.getInput();
-      return [coords.x, coords.y];
-    }
-
     let inputStack = new Int16Array(2 * length);
     let idx = 0;
 

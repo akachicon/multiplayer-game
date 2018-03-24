@@ -15,9 +15,11 @@
 // while killing, which is not appropriate.
 //
 // Considering mentioned above, the suggestion is to restrict the rotation speed of players to
-// sensible amount of degrees per update, which is 15 in this implementation.
+// sensible amount of degrees per update, which in this implementation is about 12
+// (max of PI / 45 at every frame with 50ms server time step).
 
 const DATA_SEND_INTERVAL = 50;
+const SERVER_TIMESTEP = 50;
 const MAX_CLIENT_STATES = 1000;
 
 const game = {
@@ -105,7 +107,7 @@ game.ondata = function (data) {
 
   let serverState = parseData(new Int16Array(data));
 
-  game.playField.updateToState(serverState, DATA_SEND_INTERVAL);
+  game.playField.updateToState(serverState, SERVER_TIMESTEP);
 
   if (!game.serverLastState) {
     game.serverLastState = serverState;

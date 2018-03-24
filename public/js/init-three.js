@@ -1,3 +1,8 @@
+'use strict';
+
+const FRAME_RATE = 60;
+const PI2 = 2 * Math.PI;
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color( 0xffffff );
 
@@ -10,28 +15,77 @@ document.body.appendChild(renderer.domElement);
 
 class GameFieldObject {
   constructor(posX, posY, rotation, color) {
-    let geometry = new THREE.BoxGeometry(1, 1, 1);
-    let material = new THREE.MeshBasicMaterial({ color: color ? color : 0x433f81 });
-    let mesh = new THREE.Mesh(geometry, material);
+    this.geometry = new THREE.BoxGeometry(1, 1, .1);
+    this.material = new THREE.MeshBasicMaterial({ color: color ? color : 0x433f81 });
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
 
-    mesh.position.x = posX;
-    mesh.position.y = posY;
-    mesh.rotation.z = rotation;
+    this.mesh.position.x = posX;
+    this.mesh.position.y = posY;
+    this.mesh.rotation.z = rotation;
 
-    this.mesh = mesh;
+    this.deltaX = null;
+    this.deltaY = null;
+    this.deltaZ = null;
   }
 
-  updatePosition(x, y, time) {
+  updatePosition(x, y) {
     this.mesh.position.x = x;
     this.mesh.position.y = y;
   }
 
-  updateRotation(rotation, time) {
-    this.mesh.rotation.z = rotation;
+  updatePositionDelta(x, y, time) {
+    this.deltaX = (x - this.mesh.position.x) / (time * FRAME_RATE / 1000);
+    this.deltaY = (y - this.mesh.position.y) / (time * FRAME_RATE / 1000);
+  }
+
+  updateRotation(z) {
+    this.mesh.rotation.z = z;
+  }
+
+  updateRotationDelta(rotation, time) {
+    // normalize before applying
+
+    let r = this.mesh.rotation.z % (PI2);
+    let newR = rotation % (PI2);
+    let rDirection;
+    let rDist;
+
+    r > Math.PI && (r -= PI2);
+    r < -Math.PI && (r += PI2);
+
+    newR > Math.PI && (newR -= PI2);
+    newR < -Math.PI && (newR += PI2);
+
+    if (newR >= r) {
+      if (newR - r >= Math.PI) {
+        rDirection = -1;
+        rDist = r + PI2 - newR;
+      } else {
+        rDirection = 1;
+        rDist = newR - r;
+      }
+    } else {
+      if (r - newR >= Math.PI) {
+        rDirection = 1;
+        rDist = newR + PI2 - r;
+      } else {
+        rDirection = -1;
+        rDist = r - newR;
+      }
+    }
+
+    this.deltaZ = rDirection * rDist / (time * FRAME_RATE / 1000);
+  }
+
+  interpolate() {
+    this.mesh.position.x += this.deltaX;
+    this.mesh.position.y += this.deltaY;
+    this.mesh.rotation.z += this.deltaZ;
   }
 
   destroy() {
-
+    this.geometry.dispose();
+    this.material.dispose();
   }
 }
 
@@ -56,6 +110,14 @@ class GameField {
     if (inputManager.turnedOn) {
       inputManager.update();
       direction = inputManager.getInput();
+    }
+
+    for (let id in this.players) {
+      if (id === this.trackedId) {
+        continue;
+      }
+
+      this.players[id].interpolate();
     }
 
     // draw on client freely with intention to correct after new game state has arrived
@@ -104,11 +166,12 @@ class GameField {
         this.scene.add(this.players[id].mesh);
 
       } else {
-        this.players[id].updatePosition(
+        this.players[id].updatePositionDelta(
           gameStateId.position.x,
-          gameStateId.position.y
+          gameStateId.position.y,
+          dataSendInterval
         );
-        this.players[id].updateRotation(gameStateId.rotation);
+        this.players[id].updateRotationDelta(gameStateId.rotation, dataSendInterval);
       }
     }
 

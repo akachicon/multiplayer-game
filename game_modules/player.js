@@ -50,7 +50,12 @@ function addToPending(id) {
 function updateGameData(id, data) {
   let pgd = playerList[id].gameData;
   let clientState = new Int16Array(data);
+  let clientInput = new Int16Array(data, 6);
   let lastClientTick = clientState[1];
+  
+  if (!clientInput.length) {
+    return;
+  }
 
   if (!pgd.inGame) {
     pgd.inGame = true;        // means it will be shown at next server transmission
@@ -73,7 +78,7 @@ function updateGameData(id, data) {
     event: clientState[2]       // TODO: implement event logic
   };
 
-  let newGameData = mdp(lastPosition, lastRotation, new Int16Array(data, 6));
+  let newGameData = mdp(lastPosition, lastRotation, clientInput);
 
   pgd.lastState.position = newGameData.position;
   pgd.lastState.rotation = newGameData.rotation;
