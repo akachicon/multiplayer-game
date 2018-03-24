@@ -79,6 +79,10 @@ game.ondata = function (data) {
 
     switch (response) {
       case 1:
+        if (game.status === 'participant') {
+          return;
+        }
+
         game.status = 'participant';
         game.id = id;
         clearInterval(game.joinInterval);
