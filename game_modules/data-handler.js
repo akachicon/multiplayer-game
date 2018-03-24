@@ -17,6 +17,7 @@ function dataHandler(data, sender) {
           return;
         }
         sgd.status = 'participant';
+        console.log(sgd);
         let init = player.addToPending(sender.id);
         sender.dc.send(new Int16Array([
           1, init.id, init.position.x.int, init.position.x.frac, init.position.y.int, init.position.y.frac, init.rotation
