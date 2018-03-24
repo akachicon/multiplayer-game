@@ -15,8 +15,8 @@
 // while killing, which is not appropriate.
 //
 // Considering mentioned above, the suggestion is to restrict the rotation speed of players to
-// sensible amount of degrees per update, which in this implementation is about 12
-// (max of PI / 45 at every frame with 50ms server time step).
+// sensible amount of degrees per update, which in this implementation is about 14
+// (max of PI / 40 at every frame with 50ms server time step).
 
 const DATA_SEND_INTERVAL = 50;
 const SERVER_TIMESTEP = 50;
@@ -34,8 +34,8 @@ const game = {
   playField: playField,
   inputManager: inputManager,
   event: null,
-  position: { x: null, y: null },
-  rotation: null
+  // position: { x: null, y: null },
+  // rotation: null
 };
 
 game.emit = function (event) {        // use this only after webrtc data-channel has been opened, these events supposed to be reliable
@@ -77,7 +77,8 @@ game.ondata = function (data) {
       || data.byteLength === 2) {        // status-request response
 
     let [response, id, pxint, pxfrac, pyint, pyfrac, rotation] = new Int16Array(data);
-    game.position = { x: pxint + pxfrac / 10000, y: pyint + pyfrac / 10000};
+    // game.position = { x: pxint + pxfrac / 10000, y: pyint + pyfrac / 10000};
+    // game.rotation = rotation / 1000;
 
     switch (response) {
       case 1:
@@ -107,7 +108,9 @@ game.ondata = function (data) {
 
   let serverState = parseData(new Int16Array(data));
 
-  game.playField.updateToState(serverState, SERVER_TIMESTEP);
+  if (serverState !== game.serverLastState) {
+    game.playField.updateToState(serverState, SERVER_TIMESTEP);
+  }
 
   if (!game.serverLastState) {
     game.serverLastState = serverState;
@@ -175,8 +178,8 @@ function startSendData(px, py, rotation) {
 
 function getPositionRotation() {        // TODO: implement
   return {
-    position: 'test position - have no need to be implemented right now',
-    rotation: 'the same'
+    position: game.playField.trackedPosition,
+    rotation: game.playField.trackedRotation
   };
 }
 

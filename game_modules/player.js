@@ -52,7 +52,7 @@ function updateGameData(id, data) {
   let clientState = new Int16Array(data);
   let clientInput = new Int16Array(data, 6);
   let lastClientTick = clientState[1];
-  
+
   if (!clientInput.length) {
     return;
   }

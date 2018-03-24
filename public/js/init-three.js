@@ -1,6 +1,9 @@
 'use strict';
 
 const FRAME_RATE = 60;
+const MAX_ROTATION_SPEED = Math.PI / 40;
+const MIN_ROTATION_SPEED = 0.02;
+const PLAYER_SPEED = 0.1;
 const PI2 = 2 * Math.PI;
 
 const scene = new THREE.Scene();
@@ -45,8 +48,8 @@ class GameFieldObject {
   updateRotationDelta(rotation, time) {
     // normalize before applying
 
-    let r = this.mesh.rotation.z % (PI2);
-    let newR = rotation % (PI2);
+    let r = this.mesh.rotation.z % PI2;
+    let newR = rotation % PI2;
     let rDirection;
     let rDist;
 
@@ -96,6 +99,8 @@ class GameField {
     this.renderer = renderer;
     this.players = {};
     this.trackedId = null;
+    this.trackedPosition = null;
+    this.trackedRotation = null;
 
     // evironment creation
 
@@ -105,13 +110,6 @@ class GameField {
   }
 
   update() {
-    let direction;
-
-    if (inputManager.turnedOn) {
-      inputManager.update();
-      direction = inputManager.getInput();
-    }
-
     for (let id in this.players) {
       if (id === this.trackedId) {
         continue;
@@ -120,8 +118,87 @@ class GameField {
       this.players[id].interpolate();
     }
 
+    if (this.trackedObject) {
+      this.camera.position.x = this.trackedObject.mesh.position.x;
+      this.camera.position.y = this.trackedObject.mesh.position.y;
+    }
+
     // draw on client freely with intention to correct after new game state has arrived
-    // ...
+
+    let direction;
+
+    if (inputManager.turnedOn) {
+      inputManager.update();
+      direction = inputManager.getInput();
+
+      // calculate next step position by applying server-side logic
+
+      let endPosition;
+      let endRotation;
+      let inputAngle = Math.atan2(direction.y, direction.x);
+      let r = this.trackedRotation % PI2;
+      let rDir;
+      let rSpeed;
+
+      if (r > Math.PI) {
+        r -= PI2;
+      }
+      if (r <= -Math.PI) {
+        r += PI2;
+      }
+
+      if (inputAngle >= r) {
+        if (inputAngle - r >= Math.PI) {
+          rDir = -1;
+          rSpeed = r + PI2 - inputAngle;
+        } else {
+          rDir = 1;
+          rSpeed = inputAngle - r;
+        }
+      } else {
+        if (r - inputAngle >= Math.PI) {
+          rDir = 1;
+          rSpeed = inputAngle + PI2 - r;
+        } else {
+          rDir = -1;
+          rSpeed = r - inputAngle;
+        }
+      }
+
+      rSpeed /= 2;
+      if (rSpeed > MAX_ROTATION_SPEED) {
+        rSpeed = MAX_ROTATION_SPEED;
+      }
+
+      if (rSpeed <= MIN_ROTATION_SPEED) {
+        rSpeed = MIN_ROTATION_SPEED;
+      }
+
+      rSpeed = rDir * rSpeed;
+      endRotation = (r + rSpeed) % PI2;
+
+      if (rSpeed < 0) {
+        rSpeed += PI2;
+      }
+      endRotation = Math.floor(endRotation * 1000) / 1000;
+
+      let deltaX = Math.floor(PLAYER_SPEED * Math.cos(r) * 10000) / 10000;
+      let deltaY = Math.floor(PLAYER_SPEED * Math.sin(r) * 10000) / 10000;
+
+      endPosition = {
+        x: this.trackedPosition.x + deltaX,
+        y: this.trackedPosition.y + deltaY
+      };
+
+      // apply calculated position and save the result
+
+      this.trackedObject.mesh.position.x = endPosition.x;
+      this.trackedObject.mesh.position.y = endPosition.y;
+      this.trackedObject.mesh.rotation.z = endRotation;
+
+      this.trackedPosition = endPosition;
+      this.trackedRotation = endRotation;
+    }
 
     requestAnimationFrame(this.update.bind(this));
     this.renderer.render(this.scene, this.camera);
@@ -134,6 +211,9 @@ class GameField {
 
     this.camera.position.x = posX;
     this.camera.position.y = posY;
+
+    this.trackedPosition = { x: posX, y: posY };
+    this.trackedRotation = rotation;
   }
 
   end() {
@@ -142,12 +222,14 @@ class GameField {
     }
     this.trackedId = null;
     this.trackedObject = null;
+    this.trackedPosition = null;
+    this.trackedRotation = null;
 
     this.camera.position.x = 0;
     this.camera.position.y = 0;
   }
 
-  updateToState(gameState, dataSendInterval) {      // TODO: call with time
+  updateToState(gameState, dataSendInterval) {
     for (let id in gameState) {
       if (id === this.trackedId
           || id === 'clientTick'
@@ -193,16 +275,65 @@ class GameField {
     }
 
     if (gameState[this.trackedId]) {
-      this.updateTrackedObject(gameState[this.trackedId]);
+      this.updateTrackedObject(gameState[this.trackedId], gameState['clientTick']);
     }
   }
 
-  updateTrackedObject(state) {
-    this.trackedObject.updatePosition(state.position.x, state.position.y);
-    this.trackedObject.updateRotation(state.rotation);
+  updateTrackedObject(state, clientTick) {
+    let checkState = game.clientStates[clientTick];
+    let checkPosition = checkState.position;
+    let checkRotation = checkState.rotation;
 
-    this.camera.position.x = state.position.x;
-    this.camera.position.y = state.position.y;
+    let deltaX = state.position.x - checkPosition.x;
+    let deltaY = state.position.y - checkPosition.y;
+
+    // normalize then calculate rotation
+
+    let r = checkRotation % PI2;
+    let newR = state.rotation % PI2;
+    let rDirection;
+    let rDist;
+
+    r > Math.PI && (r -= PI2);
+    r < -Math.PI && (r += PI2);
+
+    newR > Math.PI && (newR -= PI2);
+    newR < -Math.PI && (newR += PI2);
+
+    if (newR >= r) {
+      if (newR - r >= Math.PI) {
+        rDirection = -1;
+        rDist = r + PI2 - newR;
+      } else {
+        rDirection = 1;
+        rDist = newR - r;
+      }
+    } else {
+      if (r - newR >= Math.PI) {
+        rDirection = 1;
+        rDist = newR + PI2 - r;
+      } else {
+        rDirection = -1;
+        rDist = r - newR;
+      }
+    }
+
+    let deltaZ = rDirection * rDist;
+
+    if (Math.abs(deltaX) > 0.05) {
+      this.trackedObject.mesh.position.x += deltaX;
+      this.trackedPosition.x += deltaX;
+    }
+
+    if (Math.abs(deltaY) > 0.05) {
+      this.trackedObject.mesh.position.y += deltaY;
+      this.trackedPosition.y += deltaY;
+    }
+
+    if (Math.abs(deltaZ) > 0.02) {
+      this.trackedObject.mesh.rotation.z += deltaZ;
+      this.trackedRotation += deltaZ;
+    }
   }
 }
 

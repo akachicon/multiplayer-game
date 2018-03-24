@@ -61,9 +61,6 @@ module.exports = function (startPosition, startRotation, input) {
     rotationSpeed = rotationDirection * rotationSpeed;
     endRotation = (currentRotation + rotationSpeed) % (2 * Math.PI);
 
-    if (rotationSpeed < 0) {
-      rotationSpeed += 2 * Math.PI;
-    }
     endRotation = Math.floor(endRotation * 1000) / 1000;
 
     let deltaX = Math.floor(PLAYER_SPEED * fMath.cos(currentRotation) * 10000) / 10000;
