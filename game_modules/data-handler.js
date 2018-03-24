@@ -2,8 +2,6 @@ const player = require('./player');
 
 module.exports = dataHandler;
 
-let savedId = null;
-
 function dataHandler(data, sender) {
   if (data.byteLength === 1) {        // status-request message (join = 1, leave = 0)
     let [request] = new Uint8Array(data);
@@ -42,10 +40,6 @@ function dataHandler(data, sender) {
   }
 
   // handle client input data
-
-  if (savedId !== sender.id) {
-    console.log(sender.id);
-  }
 
   player.updateGameData(sender.id, data);
 }

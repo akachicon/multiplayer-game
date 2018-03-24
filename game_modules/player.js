@@ -54,6 +54,7 @@ function updateGameData(id, data) {
 
   if (!pgd.inGame) {
     pgd.inGame = true;        // means it will be shown at next server transmission
+    console.log(id);
   }
 
   if (lastClientTick - pgd.lastState.clientTick > 500
