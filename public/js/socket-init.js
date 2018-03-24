@@ -52,25 +52,7 @@ function createDataChannels() {
   };
 
   channel.onmessage = function(evt) {
-    let response = new Uint16Array(evt.data);
-    let dot;
-
-    // console.log(response[0], response[1]);
-
-    dot = document.createElement('div');
-    dot.className = "dot";
-    dot.style.left = response[0] + "px";
-    dot.style.top = response[1] + "px";
-
-    if (response.length === 3) {
-      console.log(window.timeStamp - performance.now());
-      dot.style.background = '#ee0000';
-      dot.style.width = 20 + 'px';
-      dot.style.height = 20 + 'px';
-      dot.style.zIndex = 1000;
-    }
-
-    document.body.appendChild(dot);
+    game.ondata(evt.data);
   };
 
   channel.onclose = function() {
@@ -141,7 +123,6 @@ function setRemoteDesc(desc) {
 
 function onComplete() {
   pendingCandidates = [];
-  startEchoMouseMove();
 }
 
 function waitForDataChannels() {
@@ -150,44 +131,4 @@ function waitForDataChannels() {
 
 function handleError(err) {
   throw err;
-}
-
-function startEchoMouseMove() {
-  document.body.style.height = innerHeight;
-  document.body.style.width = innerWidth;
-
-  document.onmousemove = handleMouseMove;
-
-  document.onclick = handleClick;
-
-  function handleMouseMove(event) {
-    let dot, eventDoc, doc, body, pageX, pageY;
-
-    // If pageX/Y aren't available and clientX/Y
-    // are, calculate pageX/Y - logic taken from jQuery
-    // Calculate pageX/Y if missing and clientX/Y available
-    if (event.pageX === null && event.clientX !== null) {
-      eventDoc = (event.target && event.target.ownerDocument) || document;
-      doc = eventDoc.documentElement;
-      body = eventDoc.body;
-
-      event.pageX = event.clientX +
-        (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
-        (doc && doc.clientLeft || body && body.clientLeft || 0);
-      event.pageY = event.clientY +
-        (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
-        (doc && doc.clientTop  || body && body.clientTop  || 0 );
-    }
-
-    let data = new Uint16Array([event.pageX, event.pageY]);
-
-    dc.send(data.buffer);
-  }
-
-  function handleClick(event) {
-    let data = new Uint16Array([event.pageX, event.pageY, 1]);
-    window.timeStamp = performance.now();
-
-    dc.send(data.buffer);
-  }
 }

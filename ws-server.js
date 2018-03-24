@@ -38,6 +38,8 @@ module.exports = function (cluster) {
         }, 1000);
       });
     } else {
+      // transport to create wrtc connection
+
       let id = data.socketId;
 
       delete data.socketId;

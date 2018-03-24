@@ -1,11 +1,13 @@
 const wrtc = require('wrtc');
+const game = require('./game_modules/game');
 
-let peers = {};
+const player = game.player;
+const peers = game.player.list;
 
 initGarbageCollector();
 
 process.on('message', function (data) {
-  if (data.querier && data.querier === 'garbagecollector'){
+  if (data.querier && data.querier === 'garbagecollector') {
     collectGarbage(data);
     return;
   }
@@ -22,7 +24,13 @@ process.on('message', function (data) {
       remoteReceived: false,
       pendingCandidates: [],
       dcReady: false,
-      dc: null
+      dc: null,
+      gameData: {
+        status: null,
+        gameId: null,
+        lastState: null,
+        inGame: false
+      }
     };
   }
 
@@ -71,19 +79,23 @@ function handleDataChannels(peer, pc) {
     channel.onopen = function() {
       peer.dcReady = true;
       peer.pendingCandidates = [];
+
+      peer.gameData.status = 'spectator';
     };
 
     channel.onmessage = function(evt) {
-      channel.send(evt.data);
+      game.ondata(evt.data, peer);
     };
 
     channel.onclose = function() {
       try {
+        player.removeFromGame(peer.id);
+      } catch (err) {}
+
+      try {
         peers[peer.id].pc.close();
         delete peers[peer.id];
-      } catch (err) {
-        console.log(err);
-      }
+      } catch (err) {}
     };
 
     channel.onerror = handleError;
@@ -157,6 +169,10 @@ function collectGarbage(data) {
     let peer = peers[id];
 
     try {
+      player.removeFromGame(peer.id);
+    } catch (err) {}
+
+    try {
       peer.pc.close();
     } catch (err) {}
 
@@ -171,3 +187,13 @@ function collectGarbage(data) {
     delete peers[id];
   });
 }
+
+setInterval(() => {
+  for (let id in peers) {
+    // console.log(id, peers[id].gameData);
+
+    try {
+      console.log(peers[id].gameData.position.x);
+    } catch (e) {}
+  }
+}, 2000);
